@@ -17,6 +17,7 @@
   "homepage": "https://github.com/schrijversyente/qa-portfolio-playwright#readme",
   "devDependencies": {
     "@playwright/test": "^1.62.1",
-    "@types/node": "^26.2.0"
+    "@types/node": "^26.2.0",
+    "playwright-bdd": "^9.2.0"
   }
 }
