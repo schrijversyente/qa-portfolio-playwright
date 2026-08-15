@@ -1,4 +1,4 @@
-# Test Strategy — Toolshop (Practice Software Testing) Automation Project
+# Teststrategie — Toolshop (Practice Software Testing) Automatiseringsproject
 
 **Status:** Eerste opzet — te valideren en aan te scherpen na volledige verkenning van de API/UI.
 
@@ -18,16 +18,23 @@ Dit document beschrijft de teststrategie voor een geautomatiseerde testsuite teg
 
 ## 2. Risicoanalyse
 
-| Flow / Component                     | Business-impact bij falen                  | Waarschijnlijkheid van falen    | Risiconiveau | Testlevel(s)             |
-|--------------------------------------|--------------------------------------------|---------------------------------|--------------|--------------------------|
-| Authenticatie (login/registratie)    | Hoog — geen toegang = geen omzet           | Midden                          | **Hoog**     | Unit, E2E                |
-| Checkout / order plaatsen            | Hoog — direct omzetverlies                 | Midden                          | **Hoog**     | Integratie, E2E          |
-| Factuurgeneratie (achtergrondproces) | Hoog — financiële correctheid              | Hoog (afhankelijk van brondata) | **Hoog**     | Integratie, contract/API |
-| Productcatalogus / zoeken            | Midden — slechte UX, geen directe blokkade | Laag                            | **Midden**   | E2E (smoke)              |
-| Orderhistorie / accountoverzicht     | Midden — vertrouwen/transparantie klant    | Laag                            | **Midden**   | E2E                      |
-| Admin-functionaliteit                | Laag-Midden — interne impact               | Laag                            | **Laag**     | Steekproefsgewijs        |
+**Gevalideerd tegen de daadwerkelijke API-specificatie (resource-groepen: Brand, Cart, Category, Contact/Messages, Favorite, Image, Invoice, Payment, Postcode-lookup, Product).**
 
-**Toelichting factuurgeneratie:** dit proces draait als achtergrondtaak (cron) en faalt zichtbaar wanneer brondata ontbreekt of inconsistent is. Dit maakt het een geschikt scenario om integratie-falen (afhankelijke service niet beschikbaar / inconsistente data) te simuleren en te testen — zie sectie 5.
+| Flow / Component                                                           | Business-impact bij falen                                                                               | Waarschijnlijkheid van falen                    | Risiconiveau | Testlevel(s)                    |
+|----------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|-------------------------------------------------|--------------|---------------------------------|
+| Authenticatie (login/registratie)                                          | Hoog — geen toegang = geen omzet                                                                        | Midden                                          | **Hoog**     | Unit, E2E                       |
+| Checkout / order plaatsen                                                  | Hoog — direct omzetverlies                                                                              | Midden                                          | **Hoog**     | Integratie, E2E                 |
+| Betaling (`/payment/check`)                                                | Hoog — financiële transactiecorrectheid                                                                 | Midden                                          | **Hoog**     | Integratie, API                 |
+| Postcode-lookup (adresvalidatie)                                           | Hoog — expliciet afhankelijk van externe/gesimuleerde service, met officieel gedocumenteerd 502-faalpad | Hoog                                            | **Hoog**     | Integratie, API (contractfalen) |
+| Factuurgeneratie (achtergrondproces + PDF-generatie met statuspolling)     | Hoog — financiële correctheid + asynchroon proces (INITIATED/IN_PROGRESS/COMPLETED)                     | Hoog (afhankelijk van brondata en async timing) | **Hoog**     | Integratie, contract/API        |
+| Productcatalogus / zoeken                                                  | Midden — slechte UX, geen directe blokkade                                                              | Laag                                            | **Midden**   | E2E (smoke)                     |
+| Orderhistorie / accountoverzicht                                           | Midden — vertrouwen/transparantie klant                                                                 | Laag                                            | **Midden**   | E2E                             |
+| Contact/Messages (incl. status-flow, bijlagen)                             | Midden — klantcommunicatie, geen directe omzetimpact                                                    | Laag                                            | **Midden**   | E2E, API                        |
+| Admin-functionaliteit                                                      | Laag-Midden — interne impact                                                                            | Laag                                            | **Laag**     | Steekproefsgewijs               |
+
+**Toelichting factuurgeneratie:** dit proces draait als achtergrondtaak (cron) en faalt zichtbaar wanneer brondata ontbreekt of inconsistent is. Daarnaast is PDF-generatie asynchroon met een apart statuspolling-endpoint, wat een extra testdimensie toevoegt (race conditions, polling-gedrag). Dit maakt het een geschikt scenario om integratie-falen te simuleren en te testen — zie sectie 5.
+
+**Toelichting postcode-lookup:** dit endpoint is expliciet gebouwd met een configureerbare datasource (lokale faker-driver of externe HTTP-service/WireMock-stub), inclusief een gedocumenteerd 502-foutpad ("Upstream lookup failure"). Dit is het sterkste, officieel ondersteunde scenario in deze applicatie om een falende externe afhankelijkheid te testen — zie sectie 5.
 
 ## 3. Testlevels en verantwoordelijkheden
 
@@ -47,8 +54,10 @@ Dit document beschrijft de teststrategie voor een geautomatiseerde testsuite teg
 ## 5. Integratie- en foutscenario's
 
 Om aan te tonen dat afhankelijkheden tussen systemen expliciet worden getest (niet alleen de happy path):
+- **Postcode-lookup faalpad testen**: dit endpoint heeft een gedocumenteerd 502-scenario ("Upstream lookup failure") voor wanneer de onderliggende adres-service niet beschikbaar is. Dit is het meest realistische en officieel ondersteunde integratiefalen-scenario in deze applicatie, en wordt als primair voorbeeld gebruikt in de testautomatisering.
 - Simuleren van een falende/trage API-response tijdens checkout (via Playwright's `page.route`) en verifiëren dat de UI dit correct afvangt (foutmelding, geen halve transactie)
 - Testen van het gedrag rond factuurgeneratie wanneer brondata ontbreekt — reproduceren en documenteren van het scenario dat initieel werd waargenomen bij het opzetten van de omgeving (cron-taak faalt bij lege database)
+- Testen van het asynchrone PDF-generatieproces van facturen: statuspolling (INITIATED → IN_PROGRESS → COMPLETED) correct afhandelen, inclusief het scenario waarin de status nooit naar COMPLETED overgaat (timeout-gedrag)
 
 ## 6. Entry- en exit-criteria
 
@@ -74,4 +83,4 @@ Om aan te tonen dat afhankelijkheden tussen systemen expliciet worden getest (ni
 - Falende hoog-risico scenario's worden expliciet gemarkeerd/geprioriteerd in de rapportage, in lijn met de risicoclassificatie uit sectie 2
 
 ---
-*Te valideren: volledige lijst van Swagger-endpoints doorlopen om te bevestigen dat de risicoanalyse in sectie 2 volledig en accuraat is.*
+*Gevalideerd tegen de publieke API-specificatie (api.practicesoftwaretesting.com/docs). Resource-groepen en risico's zijn bevestigd; de lokale omgeving (localhost:8091) draait dezelfde applicatie/versie, dus deze validatie geldt ook daar.*
