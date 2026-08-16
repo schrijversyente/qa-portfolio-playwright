@@ -40,17 +40,21 @@ jobs:
         working-directory: toolshop-app
         run: docker compose ps
 
-      - name: Wait for application to be ready
+      - name: Wait for containers to accept connections
         run: |
-          # The project's own README states the first `docker compose up -d`
-          # can take up to 5 minutes (no layer cache yet). A CI runner has
-          # zero cache on every run, so we allow generous headroom here
-          # rather than reusing a timeout that only worked locally because
-          # images were already cached from prior local runs.
+          # Deliberately NOT checking /products here — that endpoint depends
+          # on the database, which hasn't been migrated/seeded yet at this
+          # point. Checking it first (as an earlier version of this workflow
+          # did) meant it could NEVER succeed, no matter the timeout, because
+          # seeding happens later — the failure was a step-ordering bug, not
+          # a timing one (confirmed via `docker compose logs`: continuous
+          # HTTP 500 on /products from the very first request, never
+          # recovering — a 500 means PHP/nginx are up and responding, just
+          # erroring on missing DB tables, not "still starting").
           echo "Waiting for frontend..."
           timeout 480 bash -c 'until curl -sf http://localhost:4200 > /dev/null; do sleep 5; done'
-          echo "Waiting for API..."
-          timeout 480 bash -c 'until curl -sf http://localhost:8091/products > /dev/null; do sleep 5; done'
+          echo "Waiting for API web server (any HTTP response, DB not required yet)..."
+          timeout 480 bash -c 'until curl -s -o /dev/null -w "%{http_code}" http://localhost:8091/products | grep -qE "^[0-9]{3}$"; do sleep 5; done'
 
       - name: Show container logs (debug, only on failure)
         if: failure()
@@ -60,6 +64,15 @@ jobs:
       - name: Seed test database
         working-directory: toolshop-app
         run: docker compose exec -T laravel-api php artisan migrate:fresh --seed
+
+      - name: Verify API is serving data after seeding
+        run: |
+          timeout 60 bash -c 'until curl -sf http://localhost:8091/products > /dev/null; do sleep 3; done'
+
+      - name: Show container logs (debug, only on failure, post-seed)
+        if: failure()
+        working-directory: toolshop-app
+        run: docker compose logs
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
