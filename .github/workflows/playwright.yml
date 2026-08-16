@@ -73,6 +73,16 @@ jobs:
         working-directory: toolshop-app
         run: docker compose logs
 
+      - name: Show Laravel application log (debug, only on failure)
+        if: failure()
+        working-directory: toolshop-app
+        run: |
+          # docker compose logs only shows the HTTP status code (500),
+          # not the actual PHP/Laravel error behind it. This dumps the
+          # real stack trace so we stop guessing at architecture issues
+          # and see the concrete cause.
+          docker compose exec -T laravel-api cat storage/logs/laravel.log || echo "No laravel.log found or command failed"
+
       - name: Seed test database
         working-directory: toolshop-app
         run: docker compose exec -T laravel-api php artisan migrate:fresh --seed
@@ -85,6 +95,11 @@ jobs:
         if: failure()
         working-directory: toolshop-app
         run: docker compose logs
+
+      - name: Show Laravel application log (debug, only on failure, post-seed)
+        if: failure()
+        working-directory: toolshop-app
+        run: docker compose exec -T laravel-api cat storage/logs/laravel.log || echo "No laravel.log found or command failed"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
