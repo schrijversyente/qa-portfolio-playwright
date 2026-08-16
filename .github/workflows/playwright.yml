@@ -28,14 +28,34 @@ jobs:
 
       - name: Start Toolshop application (Docker Compose)
         working-directory: toolshop-app
-        run: docker compose up -d
+        run: |
+          # Some docker-compose based Laravel setups require a .env file
+          # (copied from .env.example) before `docker compose up` will
+          # succeed — check for its presence/setup instructions in the
+          # repo's README/docs before assuming this step should just work.
+          docker compose up -d
+
+      - name: Show container status (debug)
+        if: always()
+        working-directory: toolshop-app
+        run: docker compose ps
 
       - name: Wait for application to be ready
         run: |
+          # The project's own README states the first `docker compose up -d`
+          # can take up to 5 minutes (no layer cache yet). A CI runner has
+          # zero cache on every run, so we allow generous headroom here
+          # rather than reusing a timeout that only worked locally because
+          # images were already cached from prior local runs.
           echo "Waiting for frontend..."
-          timeout 120 bash -c 'until curl -sf http://localhost:4200 > /dev/null; do sleep 3; done'
+          timeout 480 bash -c 'until curl -sf http://localhost:4200 > /dev/null; do sleep 5; done'
           echo "Waiting for API..."
-          timeout 120 bash -c 'until curl -sf http://localhost:8091/products > /dev/null; do sleep 3; done'
+          timeout 480 bash -c 'until curl -sf http://localhost:8091/products > /dev/null; do sleep 5; done'
+
+      - name: Show container logs (debug, only on failure)
+        if: failure()
+        working-directory: toolshop-app
+        run: docker compose logs
 
       - name: Seed test database
         working-directory: toolshop-app
