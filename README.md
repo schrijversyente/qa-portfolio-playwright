@@ -75,8 +75,11 @@ docker exec -it pst-laravel-api-1 php artisan migrate:fresh --seed
 
 # 2. In this repo
 npm install
-npx bddgen
-npx playwright test
+npm test            # runs bddgen automatically, then the full suite
+npm run test:smoke  # fast subset: @smoke scenarios, excluding known-flaky @wip ones
+npm run lint         # ESLint
+npm run typecheck    # tsc --noEmit
+npm run report        # open the last HTML report
 ```
 
 ## What I'd do with more time

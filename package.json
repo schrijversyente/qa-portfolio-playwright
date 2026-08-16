@@ -3,7 +3,17 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "bdd": "bddgen",
+    "pretest": "npm run bdd",
+    "test": "playwright test",
+    "test:smoke": "npm run bdd && playwright test --grep @smoke --grep-invert @wip",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "report": "playwright show-report"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/schrijversyente/qa-portfolio-playwright.git"
@@ -16,8 +26,16 @@
   },
   "homepage": "https://github.com/schrijversyente/qa-portfolio-playwright#readme",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
     "@types/node": "^26.2.0",
-    "playwright-bdd": "^9.2.0"
+    "dotenv": "^17.4.2",
+    "eslint": "^10.8.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-playwright": "^2.11.0",
+    "playwright-bdd": "^9.2.0",
+    "prettier": "^3.9.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.67.0"
   }
 }

@@ -16,7 +16,7 @@ export class LoginPage {
   }
 
   async goto() {
-    await this.page.goto('http://localhost:4200/auth/login');
+    await this.page.goto('/auth/login');
   }
 
   async login(email: string, password: string) {

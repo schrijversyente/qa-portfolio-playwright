@@ -10,16 +10,18 @@ import { APIRequestContext, Page } from '@playwright/test';
  * and POST /carts/{id} is assumed based on the public API resource groups
  * (Cart), not yet confirmed against a real request/response.
  */
+const API_BASE_URL = process.env.API_BASE_URL ?? 'http://localhost:8091';
+
 export async function seedCart(
   page: Page,
   request: APIRequestContext,
   productId: string,
   quantity: number = 1
 ) {
-  const createCartResponse = await request.post('http://localhost:8091/carts');
+  const createCartResponse = await request.post(`${API_BASE_URL}/carts`);
   const { id: cartId } = await createCartResponse.json();
 
-  await request.post(`http://localhost:8091/carts/${cartId}`, {
+  await request.post(`${API_BASE_URL}/carts/${cartId}`, {
     data: { product_id: productId, quantity },
   });
 

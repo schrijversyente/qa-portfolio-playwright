@@ -152,13 +152,17 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: Generate BDD tests
-        run: npx bddgen
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
 
       - name: Run Playwright tests
         # @wip scenarios (postcode-lookup) are excluded — known limitation,
         # see README "Known limitation" and docs/test-strategy.md.
-        run: npx playwright test --grep-invert @wip
+        # `npm test` runs `pretest` (bddgen) first automatically.
+        run: npm test -- --grep-invert @wip
 
       - name: Upload test report (workflow artifact)
         if: always()

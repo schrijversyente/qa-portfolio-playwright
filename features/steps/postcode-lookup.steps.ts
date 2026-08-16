@@ -34,35 +34,47 @@ Given('I have at least one product in my cart', async function ({ page, request 
   // if the login doesn't automatically advance to the address step.
 });
 
-Given('the postcode lookup upstream service is simulated to fail with a 502 error', async function ({ page }) {
-  const checkoutPage = new CheckoutPage(page);
-  await checkoutPage.mockUpstreamFailure();
-});
+Given(
+  'the postcode lookup upstream service is simulated to fail with a 502 error',
+  async function ({ page }) {
+    const checkoutPage = new CheckoutPage(page);
+    await checkoutPage.mockUpstreamFailure();
+  }
+);
 
-When('I enter a valid postcode {string} and house number {string}', async function ({ page }, postcode: string, houseNumber: string) {
-  const checkoutPage = new CheckoutPage(page);
-  await checkoutPage.fillPostcodeAndWaitForLookup(postcode, houseNumber);
-});
+When(
+  'I enter a valid postcode {string} and house number {string}',
+  async function ({ page }, postcode: string, houseNumber: string) {
+    const checkoutPage = new CheckoutPage(page);
+    await checkoutPage.fillPostcodeAndWaitForLookup(postcode, houseNumber);
+  }
+);
 
 When('I enter an invalid postcode {string}', async function ({ page }, postcode: string) {
   const checkoutPage = new CheckoutPage(page);
   await checkoutPage.fillInvalidPostcode(postcode);
 });
 
-Then('the street, city and state fields should be automatically filled in', async function ({ page }) {
-  const checkoutPage = new CheckoutPage(page);
-  await checkoutPage.expectAddressFilledIn();
-});
+Then(
+  'the street, city and state fields should be automatically filled in',
+  async function ({ page }) {
+    const checkoutPage = new CheckoutPage(page);
+    await checkoutPage.expectAddressFilledIn();
+  }
+);
 
 Then('I should be able to continue to the next checkout step', async function ({ page }) {
   const checkoutPage = new CheckoutPage(page);
   await checkoutPage.expectContinueEnabled();
 });
 
-Then('I should see a validation error indicating the postcode is invalid', async function ({ page }) {
-  const checkoutPage = new CheckoutPage(page);
-  await checkoutPage.expectValidationError(/invalid postcode/i);
-});
+Then(
+  'I should see a validation error indicating the postcode is invalid',
+  async function ({ page }) {
+    const checkoutPage = new CheckoutPage(page);
+    await checkoutPage.expectValidationError(/invalid postcode/i);
+  }
+);
 
 Then('the address fields should remain empty', async function ({ page }) {
   const checkoutPage = new CheckoutPage(page);
@@ -84,8 +96,11 @@ Then('I should still be able to manually fill in my address', async function ({ 
   await expect(checkoutPage.streetInput).toBeEditable();
 });
 
-Then('I should be able to continue to the next checkout step after manually completing the address', async function ({ page }) {
-  const checkoutPage = new CheckoutPage(page);
-  await checkoutPage.fillAddressManually('Teststraat 1', 'Testville', 'Test');
-  await checkoutPage.expectContinueEnabled();
-});
+Then(
+  'I should be able to continue to the next checkout step after manually completing the address',
+  async function ({ page }) {
+    const checkoutPage = new CheckoutPage(page);
+    await checkoutPage.fillAddressManually('Teststraat 1', 'Testville', 'Test');
+    await checkoutPage.expectContinueEnabled();
+  }
+);

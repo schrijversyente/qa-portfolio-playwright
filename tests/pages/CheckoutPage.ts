@@ -21,7 +21,7 @@ export class CheckoutPage {
   }
 
   async goto() {
-    await this.page.goto('http://localhost:4200/checkout');
+    await this.page.goto('/checkout');
   }
 
   /**
@@ -59,14 +59,11 @@ export class CheckoutPage {
     // field that is only ever populated by the SECOND, complete phase:
     // the state field. Once it's non-empty, the full lookup has settled.
     await expect
-      .poll(
-        async () => this.stateInput.inputValue(),
-        {
-          message: 'Waiting for postcode lookup to fully complete (state field populated)',
-          timeout: 8000,
-          intervals: [250, 500, 1000],
-        }
-      )
+      .poll(async () => this.stateInput.inputValue(), {
+        message: 'Waiting for postcode lookup to fully complete (state field populated)',
+        timeout: 8000,
+        intervals: [250, 500, 1000],
+      })
       .not.toBe('');
 
     // Lookup should not have changed postcode/house number themselves
