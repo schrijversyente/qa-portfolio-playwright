@@ -148,3 +148,6 @@ vite.config.ts.timestamp-*
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# playwright-bdd generated output (regenerated via `npx bddgen`)
+/.features-gen/

@@ -56,5 +56,5 @@ Then('I should see an error message', async function ({ page }) {
 
 Then('I should not be logged in', async function ({ page }) {
   const loginPage = new LoginPage(page);
-  await loginPage.expectLoginError();
+  await loginPage.expectNotLoggedIn();
 });

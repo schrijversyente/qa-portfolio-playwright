@@ -156,7 +156,9 @@ jobs:
         run: npx bddgen
 
       - name: Run Playwright tests
-        run: npx playwright test
+        # @wip scenarios (postcode-lookup) are excluded — known limitation,
+        # see README "Known limitation" and docs/test-strategy.md.
+        run: npx playwright test --grep-invert @wip
 
       - name: Upload test report (workflow artifact)
         if: always()

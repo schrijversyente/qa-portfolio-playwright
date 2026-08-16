@@ -1,13 +1,17 @@
 # QA Portfolio — Toolshop Test Automation
 
+[![Playwright Tests](https://github.com/schrijversyente/qa-portfolio-playwright/actions/workflows/playwright.yml/badge.svg)](https://github.com/schrijversyente/qa-portfolio-playwright/actions/workflows/playwright.yml)
+
 A Playwright + TypeScript + BDD test automation project built against [Practice Software Testing (Toolshop)](https://github.com/testsmith-io/practice-software-testing), run locally via Docker and validated in CI on three browsers.
+
+**[View the latest test report →](https://schrijversyente.github.io/qa-portfolio-playwright/)**
 
 This project isn't a step-by-step tutorial follow-along. It's built to demonstrate how I approach test automation as a senior/coordination-level exercise: risk-based strategy first, architecture second, code last — and it documents the real debugging process, including the parts that didn't go smoothly.
 
 ## The story, in short
 
-1. I started from a risk analysis, not from writing tests (`docs/test-strategy.nl.md`)
-2. I mapped that analysis to concrete requirements and Gherkin scenarios (`docs/requirements-to-tests.nl.md`)
+1. I started from a risk analysis, not from writing tests (`docs/test-strategy.md`)
+2. I mapped that analysis to concrete requirements and Gherkin scenarios (`docs/requirements-to-tests.md`)
 3. I built a Page Object Model + fixtures architecture, not ad-hoc scripts
 4. I deliberately implemented one scenario end-to-end and debugged it fully — including a CI pipeline failure that took five iterations and turned out to be a file-permission mismatch between the CI runner and the container user, not a timing issue as I initially assumed
 5. I documented a known, unresolved limitation (see below) instead of hiding it
@@ -38,14 +42,14 @@ tests/
 | Requirement                  | Status                                                                   |
 |------------------------------|--------------------------------------------------------------------------|
 | Authentication (login)       | ✅ Fully implemented, passing on 3 browsers                             |
-| Postcode lookup (checkout)   | ⚠️ Implemented, one scenario has a known limitation (see below)         |
+| Postcode lookup (checkout)   | ⚠️ Implemented, tagged `@wip` and excluded from CI (see below)          |
 | Checkout, Payment, Invoicing | 📝 Gherkin scenarios written (`features/pending/`), not yet implemented |
 
 This is a deliberate choice: breadth of thought-through requirements and risk coverage, plus one fully-debugged deep example, rather than spreading effort thin trying to implement everything under time constraints.
 
 ## Known limitation
 
-The postcode-lookup feature's automatic address lookup (an asynchronous, two-phase process in the Angular app) doesn't reliably trigger via Playwright's simulated input in every case. I investigated several hypotheses — `.fill()` vs. `pressSequentially()`, loading-indicator timing, polling strategies — and improved reliability significantly, but didn't fully resolve it within the available time. Full details are in `docs/test-strategy.nl.md`.
+The postcode-lookup feature's automatic address lookup (an asynchronous, two-phase process in the Angular app) doesn't reliably trigger via Playwright's simulated input in every case. I investigated several hypotheses — `.fill()` vs. `pressSequentially()`, loading-indicator timing, polling strategies — and improved reliability significantly, but didn't fully resolve it within the available time. These scenarios are tagged `@wip` and excluded from the CI run (`--grep-invert @wip`) so the pipeline reflects what's actually verified, rather than reporting a false pass/fail on a known-flaky flow. Full details are in `docs/test-strategy.md`.
 
 ## CI/CD
 
@@ -55,8 +59,8 @@ Getting this working reliably took five debugging iterations, each with a differ
 
 ## Documentation
 
-- [`docs/test-strategy.nl.md`](docs/test-strategy.nl.md) — risk analysis, test levels, entry/exit criteria
-- [`docs/requirements-to-tests.nl.md`](docs/requirements-to-tests.nl.md) — requirements mapped to test scenarios
+- [`docs/test-strategy.md`](docs/test-strategy.md) — risk analysis, test levels, entry/exit criteria
+- [`docs/requirements-to-tests.md`](docs/requirements-to-tests.md) — requirements mapped to test scenarios
 - [`docs/onboarding-guide.md`](docs/onboarding-guide.md) — how to add a new test scenario to this framework
 - [`docs/coding-conventions.md`](docs/coding-conventions.md) — conventions and lessons learned in this project
 

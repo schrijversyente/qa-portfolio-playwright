@@ -1,6 +1,6 @@
 # Requirements → Testscenario's — Toolshop Playwright
 
-**Status:** Eerste opzet — doorgetrokken patroon voor alle hoog-risico items uit `test-strategy.nl.md`. Nog te verfijnen (edge cases, Gherkin-detaillering, koppeling aan concrete API-velden).
+**Status:** Eerste opzet — doorgetrokken patroon voor alle hoog-risico items uit `test-strategy.md`. Nog te verfijnen (edge cases, Gherkin-detaillering, koppeling aan concrete API-velden).
 
 Elke requirement is fictief maar herleidbaar tot een echte flow in de Toolshop-applicatie, gekoppeld aan het risiconiveau uit de teststrategie.
 

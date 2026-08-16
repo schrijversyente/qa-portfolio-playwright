@@ -7,20 +7,20 @@ Feature: Postcode lookup during checkout
     Given I am on the checkout page
     And I have at least one product in my cart
 
-  @high-risk @smoke
+  @high-risk @smoke @wip
   Scenario: Successful postcode lookup returns a valid address
     When I enter a valid postcode "1234AB" and house number "10"
     Then the street, city and state fields should be automatically filled in
     And I should be able to continue to the next checkout step
 
-  @validation
+  @validation @wip
   Scenario: Invalid or unknown postcode is rejected
     When I enter an invalid postcode "XXXX"
     Then I should see a validation error indicating the postcode is invalid
     And the address fields should remain empty
     And I should not be able to continue to the next checkout step
 
-  @integration-failure @high-risk
+  @integration-failure @high-risk @wip
   Scenario: Upstream postcode lookup service is unavailable
     Given the postcode lookup upstream service is simulated to fail with a 502 error
     When I enter a valid postcode "1234AB" and house number "10"

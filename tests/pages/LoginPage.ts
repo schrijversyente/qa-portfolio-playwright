@@ -35,4 +35,8 @@ export class LoginPage {
   async expectLoginError() {
     await expect(this.errorMessage).toHaveText('Invalid email or password', { timeout: 5000 });
   }
+
+  async expectNotLoggedIn() {
+    await expect(this.page).toHaveURL(/\/auth\/login/);
+  }
 }

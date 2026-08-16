@@ -33,11 +33,12 @@ Korte, praktische afspraken voor consistentie in dit project. Geen uitputtende s
 
 ## Tags
 
-Scenario's zijn getagd op risiconiveau en type, gebaseerd op de risicoanalyse in `docs/test-strategy.nl.md`:
+Scenario's zijn getagd op risiconiveau en type, gebaseerd op de risicoanalyse in `docs/test-strategy.md`:
 - `@high-risk` — hoog-risico scenario's uit de risicoanalyse
 - `@smoke` — kernscenario's voor een snelle sanity-check
 - `@integration-failure` — scenario's die een falende afhankelijke service simuleren
 - `@validation` / `@edge-case` — randgevallen en invoervalidatie
+- `@wip` — geïmplementeerd maar niet betrouwbaar genoeg om in CI te draaien (zie "Bekende beperkingen" hieronder); uitgesloten via `--grep-invert @wip` in de pipeline
 
 Gebruik tags om selectief te draaien, bijv. `npx playwright test --grep @smoke` voor een snelle CI-check.
 
@@ -48,4 +49,4 @@ Gebruik tags om selectief te draaien, bijv. `npx playwright test --grep @smoke` 
 
 ## Bekende beperkingen
 
-Niet elk scenario is (nog) volledig werkend of geïmplementeerd. Dit wordt expliciet gedocumenteerd (zie `docs/test-strategy.nl.md`, sectie "Bekende beperking") in plaats van verborgen — een eerlijke, onderbouwde beperking is waardevoller dan de indruk wekken dat alles perfect werkt.
+Niet elk scenario is (nog) volledig werkend of geïmplementeerd. Dit wordt expliciet gedocumenteerd (zie `docs/test-strategy.md`, sectie "Bekende beperking") in plaats van verborgen — een eerlijke, onderbouwde beperking is waardevoller dan de indruk wekken dat alles perfect werkt.
