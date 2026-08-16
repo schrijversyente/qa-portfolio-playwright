@@ -83,6 +83,18 @@ jobs:
           # and see the concrete cause.
           docker compose exec -T laravel-api cat storage/logs/laravel.log || echo "No laravel.log found or command failed"
 
+      - name: Show raw HTTP response body (debug, only on failure)
+        if: failure()
+        run: |
+          # curl -sf discards the response body on a non-2xx status.
+          # Dropping -f shows us exactly what the server returns —
+          # laravel.log doesn't exist, so this may be the only place
+          # the actual error message is visible.
+          echo "--- Response from /products ---"
+          curl -v http://localhost:8091/products 2>&1 || true
+          echo "--- Response from / (root) ---"
+          curl -v http://localhost:8091/ 2>&1 || true
+
       - name: Seed test database
         working-directory: toolshop-app
         run: docker compose exec -T laravel-api php artisan migrate:fresh --seed
@@ -100,6 +112,12 @@ jobs:
         if: failure()
         working-directory: toolshop-app
         run: docker compose exec -T laravel-api cat storage/logs/laravel.log || echo "No laravel.log found or command failed"
+
+      - name: Show raw HTTP response body (debug, only on failure, post-seed)
+        if: failure()
+        run: |
+          echo "--- Response from /products ---"
+          curl -v http://localhost:8091/products 2>&1 || true
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
