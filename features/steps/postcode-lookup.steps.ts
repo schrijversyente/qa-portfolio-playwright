@@ -1,21 +1,37 @@
 import { createBdd } from 'playwright-bdd';
 import { expect } from '@playwright/test';
 import { CheckoutPage } from '../../tests/pages/CheckoutPage';
+import { LoginPage } from '../../tests/pages/LoginPage';
+import { seedCart } from '../../tests/fixtures/cart';
 
-const { Given, When, Then, Before } = createBdd();
+const { Given, When, Then } = createBdd();
 
-Before(async ({ page }) => {
-  const checkoutPage = new CheckoutPage(page);
-  await checkoutPage.goto();
-});
+// NOTE: no Before-hook navigation anymore — navigation now happens explicitly
+// AFTER sessionStorage seeding, since addInitScript only affects future
+// navigations, not the currently-loaded page.
+
+const TEST_ACCOUNT = {
+  email: 'customer@practicesoftwaretesting.com',
+  password: 'welcome01',
+};
 
 Given('I am on the checkout page', async function () {
-  // handled in Before-hook
+  // handled as part of the combined flow below
 });
 
-Given('I have at least one product in my cart', async function ({ page }) {
-  // Placeholder: seed via API instead of clicking through the UI (faster, more reliable)
-  // TODO: implement once the /carts endpoint is wired into the test setup
+Given('I have at least one product in my cart', async function ({ page, request }) {
+  await seedCart(page, request, '01M02N50JG0W1SQWVKB1VZHN84', 1); // TODO: replace with a real product id
+  const checkoutPage = new CheckoutPage(page);
+  await checkoutPage.goto();
+  await checkoutPage.proceedToNextStep(1); // cart -> login step
+
+  const loginPage = new LoginPage(page);
+  await loginPage.login(TEST_ACCOUNT.email, TEST_ACCOUNT.password);
+  await checkoutPage.proceedToNextStep(2);
+
+  // TODO: verify whether a proceed-2 step exists between login and the
+  // address form (proceed-3) — add checkoutPage.proceedToNextStep(2) here
+  // if the login doesn't automatically advance to the address step.
 });
 
 Given('the postcode lookup upstream service is simulated to fail with a 502 error', async function ({ page }) {

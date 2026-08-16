@@ -3,9 +3,9 @@ import { test } from "playwright-bdd";
 
 test.describe('Postcode lookup during checkout', () => {
 
-  test.beforeEach('Background', async ({ Given, And, page }, testInfo) => { if (testInfo.error) return;
+  test.beforeEach('Background', async ({ Given, And, page, request }, testInfo) => { if (testInfo.error) return;
     await Given('I am on the checkout page'); 
-    await And('I have at least one product in my cart', null, { page }); 
+    await And('I have at least one product in my cart', null, { page, request }); 
   });
   
   test('Successful postcode lookup returns a valid address', { tag: ['@high-risk', '@smoke'] }, async ({ When, Then, And, page }) => { 
@@ -32,8 +32,6 @@ test.describe('Postcode lookup during checkout', () => {
 });
 
 // == technical section ==
-
-test.beforeEach('BeforeEach Hooks', ({ $runScenarioHooks, page }) => $runScenarioHooks('before', { page }));
 
 test.use({
   $test: [({}, use) => use(test), { scope: 'test', box: true }],

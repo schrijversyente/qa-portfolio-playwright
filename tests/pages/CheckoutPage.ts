@@ -25,23 +25,57 @@ export class CheckoutPage {
   }
 
   /**
+   * The checkout flow is a multi-step wizard with buttons like
+   * [data-test="proceed-1"], [data-test="proceed-2"], [data-test="proceed-3"].
+   * This advances from a given step to the next.
+   */
+  async proceedToNextStep(step: number) {
+    await this.page.locator(`[data-test="proceed-${step}"]`).click();
+  }
+
+  /**
    * Fills postcode (and optionally house number), then waits for the
    * automatic address lookup to complete. There is no separate "lookup"
    * button — the lookup fires automatically (likely on blur/input, with
    * a brief loading indicator) once postcode + house number are filled.
    */
-  async fillPostcodeAndWaitForLookup(postcode: string, houseNumber?: string) {
-    await this.postcodeInput.fill(postcode);
-    if (houseNumber) {
-      await this.houseNumberInput.fill(houseNumber);
-      await this.houseNumberInput.blur();
-    }
-    // Wait for either the street field to be populated (success path)
-    // or a reasonable timeout to elapse (failure/validation path handled
-    // separately by the caller via expectValidationError / mockUpstreamFailure).
-    await this.page.waitForTimeout(1000); // TODO: replace with a proper wait
-    // (e.g. waiting for the loading indicator to disappear) once its
-    // exact selector/behavior has been inspected.
+  async fillPostcodeAndWaitForLookup(postcode: string, houseNumber: string) {
+    // Using pressSequentially() instead of fill(): Angular's reactive form
+    // (valueChanges + debounce) appears to require actual keystroke events,
+    // not a single programmatic value change — confirmed by manual typing
+    // working while .fill() did not trigger the lookup.
+    await this.postcodeInput.pressSequentially(postcode, { delay: 50 });
+    await this.houseNumberInput.pressSequentially(houseNumber, { delay: 50 });
+    await this.houseNumberInput.blur();
+
+    await expect(this.postcodeInput).toHaveValue(postcode);
+    await expect(this.houseNumberInput).toHaveValue(houseNumber);
+
+    // The lookup happens in two phases: a fast partial fill (street/city,
+    // no state) followed by a slower "real" lookup that overwrites all
+    // fields including state. Rather than depending on catching the
+    // loading indicator's visible/hidden timing (unreliable — it can
+    // change state faster than we observe it), we poll directly on the
+    // field that is only ever populated by the SECOND, complete phase:
+    // the state field. Once it's non-empty, the full lookup has settled.
+    await expect
+      .poll(
+        async () => this.stateInput.inputValue(),
+        {
+          message: 'Waiting for postcode lookup to fully complete (state field populated)',
+          timeout: 8000,
+          intervals: [250, 500, 1000],
+        }
+      )
+      .not.toBe('');
+
+    // Lookup should not have changed postcode/house number themselves
+    await expect(this.postcodeInput).toHaveValue(postcode);
+    await expect(this.houseNumberInput).toHaveValue(houseNumber);
+
+    // Sanity check that the lookup actually produced a full address
+    await expect(this.streetInput).not.toHaveValue('');
+    await expect(this.cityInput).not.toHaveValue('');
   }
 
   async fillInvalidPostcode(postcode: string) {
