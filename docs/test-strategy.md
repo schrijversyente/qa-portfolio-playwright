@@ -83,4 +83,6 @@ Om aan te tonen dat afhankelijkheden tussen systemen expliciet worden getest (ni
 - Falende hoog-risico scenario's worden expliciet gemarkeerd/geprioriteerd in de rapportage, in lijn met de risicoclassificatie uit sectie 2
 
 ---
-*Gevalideerd tegen de publieke API-specificatie (api.practicesoftwaretesting.com/docs). Resource-groepen en risico's zijn bevestigd; de lokale omgeving (localhost:8091) draait dezelfde applicatie/versie, dus deze validatie geldt ook daar.*
+
+## Bekende beperking — R4 (postcode-lookup)
+Tijdens implementatie bleek de automatische adres-lookup (Angular reactive form, asynchroon in twee fases: snelle deelvulling gevolgd door een langzamere volledige vulling) niet consistent te triggeren via Playwright's gesimuleerde input (`fill()`, `pressSequentially()`, met/zonder expliciete `blur()`). Onderzocht: verschil tussen programmatische en echte toetsaanslag-events, timing van de loading-indicator, en `expect.poll()` op het resultaatveld. De exacte triggervoorwaarde van de applicatie is niet met zekerheid vastgesteld binnen de beschikbare tijd. Dit scenario staat als `WIP` in de repo, met de onderzochte hypotheses gedocumenteerd in de code-comments van `CheckoutPage.ts`.
