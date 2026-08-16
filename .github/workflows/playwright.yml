@@ -121,6 +121,20 @@ jobs:
         working-directory: toolshop-app
         run: docker compose exec -T laravel-api php artisan migrate:fresh --seed
 
+      - name: Fix storage/cache permissions after seeding
+        working-directory: toolshop-app
+        run: |
+          # Same root cause as the earlier bind-mount permission fix, but
+          # triggered later in the lifecycle: migrate:fresh (running as one
+          # container user) recreates storage/logs/laravel.log and cache
+          # files, which PHP-FPM (running as a different, more restricted
+          # user) can then no longer write to. Result: web requests that hit
+          # an error fail completely silently — no stack trace, no log entry,
+          # just a bare 500 — because Laravel can't even write the exception
+          # it's trying to log. Re-applying permissions after seeding closes
+          # that gap.
+          docker compose exec -T laravel-api chmod -R 777 storage bootstrap/cache
+
       - name: Verify API is serving data after seeding
         run: |
           timeout 120 bash -c 'until curl -sf http://localhost:8091/products > /dev/null; do sleep 3; done'
