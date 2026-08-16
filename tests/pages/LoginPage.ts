@@ -13,19 +13,30 @@ export class LoginPage {
     this.submitButton = page.locator('[data-test="login-submit"]');
   }
 
+  async goto() {
+    await this.page.goto('http://localhost:4200/auth/login');
+  }
+
   async login(email: string, password: string) {
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
     await this.submitButton.click();
 
-    // The click doesn't wait for the resulting navigation/re-render on its
-    // own — without an explicit wait here, the caller can end up interacting
-    // with a stale page (still showing the login form) before the redirect
-    // to the address step actually completes.
-    // GUESSING: waiting for the login form itself to disappear is a
-    // reasonable generic signal, but verify this against the real app —
-    // a more specific signal (e.g. waiting for the proceed-2 button to
-    // become visible) may be more reliable if this proves flaky.
-    await this.emailInput.waitFor({ state: 'hidden', timeout: 5000 });
+    // Verified: after a successful login, the app navigates to /account.
+    // Waiting for this specific URL is more reliable than a generic
+    // "form element disappeared" signal, and also fails clearly/fast if
+    // login was unsuccessful for some other reason (wrong credentials etc.)
+    // — in that case the caller should use loginExpectingFailure() instead.
+    await this.page.waitForURL('**/account', { timeout: 5000 });
+  }
+
+  /**
+   * For scenarios where login is expected to fail (wrong password,
+   * non-existent account) — does not wait for navigation to /account.
+   */
+  async loginExpectingFailure(email: string, password: string) {
+    await this.emailInput.fill(email);
+    await this.passwordInput.fill(password);
+    await this.submitButton.click();
   }
 }
