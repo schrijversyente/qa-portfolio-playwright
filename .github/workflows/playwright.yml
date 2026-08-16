@@ -61,6 +61,18 @@ jobs:
             exit 1
           fi
 
+      - name: Generate Laravel application key
+        working-directory: toolshop-app
+        run: |
+          # Laravel requires an APP_KEY (used for encrypting sessions/cookies)
+          # to boot at all. Locally this may already be set from a prior run
+          # (persisted in the committed .env or a Docker volume) — on a fresh
+          # CI checkout it may be missing, which would cause every single
+          # request to fail with a generic 500 and no application-level log
+          # entry (the failure happens too early in the boot process for
+          # Laravel's own exception handler to log it).
+          docker compose exec -T laravel-api php artisan key:generate --force
+
       - name: Wait for containers to accept connections
         run: |
           echo "Waiting for frontend..."
