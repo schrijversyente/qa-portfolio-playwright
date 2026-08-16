@@ -26,13 +26,23 @@ jobs:
           repository: testsmith-io/practice-software-testing
           path: toolshop-app
 
+      - name: Fix bind-mount permissions for container write access
+        working-directory: toolshop-app
+        run: |
+          # Root cause (confirmed via actual error, not a guess this time):
+          # "Permission denied" writing to storage/logs/laravel.log and .env.
+          # The Toolshop API directory is bind-mounted into the laravel-api
+          # container; files checked out by GitHub Actions are owned by the
+          # runner user, while PHP-FPM inside the container runs as a
+          # different (more restricted) user, which can't write to them.
+          # This also explains why storage/logs/laravel.log never existed
+          # in earlier debug attempts — Laravel couldn't even write its own
+          # error log because of this same permission mismatch.
+          chmod -R 777 .
+
       - name: Start Toolshop application (Docker Compose)
         working-directory: toolshop-app
         run: |
-          # Some docker-compose based Laravel setups require a .env file
-          # (copied from .env.example) before `docker compose up` will
-          # succeed — check for its presence/setup instructions in the
-          # repo's README/docs before assuming this step should just work.
           docker compose up -d
 
       - name: Show container status (debug)
