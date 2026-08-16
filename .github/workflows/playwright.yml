@@ -40,21 +40,33 @@ jobs:
         working-directory: toolshop-app
         run: docker compose ps
 
+      - name: Wait for composer (dependency install) to finish
+        working-directory: toolshop-app
+        run: |
+          # The `composer` service is a one-shot container that runs
+          # `composer install` for the Laravel API. It's not a long-running
+          # service, so `docker compose up -d` returning doesn't mean it's
+          # done — confirmed via logs: it was still mid-install (downloading/
+          # extracting packages) well after our previous readiness checks
+          # had already passed, causing `migrate:fresh --seed` to run before
+          # Laravel's vendor/ directory was fully populated.
+          # `docker wait` blocks until the container exits and prints its
+          # exit code.
+          CID=$(docker compose ps -q composer)
+          EXIT_CODE=$(docker wait "$CID")
+          echo "composer container exited with code $EXIT_CODE"
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "composer install failed — showing its logs:"
+            docker compose logs composer
+            exit 1
+          fi
+
       - name: Wait for containers to accept connections
         run: |
-          # Deliberately NOT checking /products here — that endpoint depends
-          # on the database, which hasn't been migrated/seeded yet at this
-          # point. Checking it first (as an earlier version of this workflow
-          # did) meant it could NEVER succeed, no matter the timeout, because
-          # seeding happens later — the failure was a step-ordering bug, not
-          # a timing one (confirmed via `docker compose logs`: continuous
-          # HTTP 500 on /products from the very first request, never
-          # recovering — a 500 means PHP/nginx are up and responding, just
-          # erroring on missing DB tables, not "still starting").
           echo "Waiting for frontend..."
           timeout 480 bash -c 'until curl -sf http://localhost:4200 > /dev/null; do sleep 5; done'
-          echo "Waiting for API web server (any HTTP response, DB not required yet)..."
-          timeout 480 bash -c 'until curl -s -o /dev/null -w "%{http_code}" http://localhost:8091/products | grep -qE "^[0-9]{3}$"; do sleep 5; done'
+          echo "Waiting for API web server (any HTTP response)..."
+          timeout 120 bash -c 'until curl -s -o /dev/null -w "%{http_code}" http://localhost:8091/products | grep -qE "^[0-9]{3}$"; do sleep 5; done'
 
       - name: Show container logs (debug, only on failure)
         if: failure()
@@ -67,7 +79,7 @@ jobs:
 
       - name: Verify API is serving data after seeding
         run: |
-          timeout 60 bash -c 'until curl -sf http://localhost:8091/products > /dev/null; do sleep 3; done'
+          timeout 120 bash -c 'until curl -sf http://localhost:8091/products > /dev/null; do sleep 3; done'
 
       - name: Show container logs (debug, only on failure, post-seed)
         if: failure()
