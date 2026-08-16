@@ -151,3 +151,7 @@ vite.config.ts.timestamp-*
 
 # playwright-bdd generated output (regenerated via `npx bddgen`)
 /.features-gen/
+
+# System under test (Toolshop), checked out as a sibling dir by CI —
+# never committed here, see README "The system under test (SUT)".
+/toolshop-app/

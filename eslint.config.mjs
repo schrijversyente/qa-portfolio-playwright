@@ -6,7 +6,16 @@ import prettierConfig from 'eslint-config-prettier';
 
 export default tseslint.config(
   {
-    ignores: ['node_modules/**', '.features-gen/**', 'playwright-report/**', 'test-results/**'],
+    // toolshop-app/ is the system-under-test, checked out as a sibling
+    // directory inside this workspace by CI (see .github/workflows/playwright.yml)
+    // — it doesn't exist locally, which is why this was invisible until CI.
+    ignores: [
+      'node_modules/**',
+      '.features-gen/**',
+      'playwright-report/**',
+      'test-results/**',
+      'toolshop-app/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
