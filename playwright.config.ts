@@ -10,7 +10,11 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const testDir = defineBddConfig({
   features: 'features/*.feature',
-  steps: 'features/steps/*.steps.ts',
+  // features/fixtures.ts exports the custom `test` (Page Object fixtures)
+  // that all step files are built on; playwright-bdd auto-detects it as
+  // long as it's included in this pattern, even though it isn't itself a
+  // step definition file.
+  steps: ['features/steps/*.steps.ts', 'features/fixtures.ts'],
 });
 
 /**
@@ -29,6 +33,12 @@ export default defineConfig({
    * the same risk for speed since failures there are just re-run, not a gate. */
   workers: process.env.CI ? 1 : undefined,
   reporter: [['html'], ['list']],
+  /* Default timeout for expect(...) assertions across the suite. Page Objects
+   * that need to deviate from this (e.g. a documented slow-render or a
+   * multi-phase async flow) set their own explicit, commented timeout. */
+  expect: {
+    timeout: 10_000,
+  },
   use: {
     baseURL: process.env.BASE_URL ?? 'http://localhost:4200',
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */

@@ -23,6 +23,9 @@ export class LoginPage {
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
     await this.submitButton.click();
+    // waitForURL isn't covered by the global expect.timeout config (that
+    // only applies to expect() assertions), so this stays explicit — fail
+    // fast if login doesn't redirect rather than waiting the full default.
     await this.page.waitForURL('**/account', { timeout: 5000 });
   }
 
@@ -33,7 +36,7 @@ export class LoginPage {
   }
 
   async expectLoginError() {
-    await expect(this.errorMessage).toHaveText('Invalid email or password', { timeout: 5000 });
+    await expect(this.errorMessage).toHaveText('Invalid email or password');
   }
 
   async expectNotLoggedIn() {

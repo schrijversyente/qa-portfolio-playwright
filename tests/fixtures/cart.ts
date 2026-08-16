@@ -6,23 +6,36 @@ import { APIRequestContext, Page } from '@playwright/test';
  * since the frontend reads its cart state from sessionStorage on startup
  * rather than from cookies or localStorage.
  *
- * NOTE (Guessing — to verify): exact request/response shape of POST /carts
- * and POST /carts/{id} is assumed based on the public API resource groups
- * (Cart), not yet confirmed against a real request/response.
+ * Request/response shapes for POST /carts, POST /carts/{id} and GET /products
+ * are verified against the live API (2026-08-16), not assumed.
  */
 const API_BASE_URL = process.env.API_BASE_URL ?? 'http://localhost:8091';
+
+type Product = { id: string; in_stock: boolean };
+
+async function getAnyInStockProductId(request: APIRequestContext): Promise<string> {
+  const response = await request.get(`${API_BASE_URL}/products`);
+  const { data }: { data: Product[] } = await response.json();
+  const product = data.find((p) => p.in_stock);
+  if (!product) {
+    throw new Error('No in-stock product found to seed the cart with');
+  }
+  return product.id;
+}
 
 export async function seedCart(
   page: Page,
   request: APIRequestContext,
-  productId: string,
+  productId?: string,
   quantity: number = 1
 ) {
+  const resolvedProductId = productId ?? (await getAnyInStockProductId(request));
+
   const createCartResponse = await request.post(`${API_BASE_URL}/carts`);
   const { id: cartId } = await createCartResponse.json();
 
   await request.post(`${API_BASE_URL}/carts/${cartId}`, {
-    data: { product_id: productId, quantity },
+    data: { product_id: resolvedProductId, quantity },
   });
 
   await page.addInitScript(

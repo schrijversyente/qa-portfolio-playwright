@@ -18,7 +18,8 @@ Korte, praktische afspraken voor consistentie in dit project. Geen uitputtende s
 - Eén klasse per pagina/component in `tests/pages/`.
 - Locators als `readonly`-properties in de constructor.
 - Acties en assertions als methodes — step definitions roepen alleen deze methodes aan, geen losse locators.
-- Een Page Object bevat geen Gherkin-kennis en geen testdata-aannames — die horen in de step definitions/fixtures.
+- Een Page Object bevat geen Gherkin-kennis en geen *scenario-afhankelijke* testdata (accounts, product-ID's, adressen) — die horen in de step definitions/fixtures.
+- Vaste UI-copy (bijv. een exacte foutmeldingstekst) mag wél in een Page Object staan, als onderdeel van een betekenisvolle assertion-methode (`expectLoginError()`) — dat is precies de locator-plus-verwacht-resultaat-kennis die een Page Object hoort te verbergen voor de step. Het onderscheid: verandert de waarde per scenario (test data) of is het een vast kenmerk van de pagina zelf (UI-contract)?
 
 ## Wachten en timing
 
