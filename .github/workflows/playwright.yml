@@ -133,7 +133,10 @@ jobs:
           # just a bare 500 — because Laravel can't even write the exception
           # it's trying to log. Re-applying permissions after seeding closes
           # that gap.
-          docker compose exec -T laravel-api chmod -R 777 storage bootstrap/cache
+          # docker compose exec defaults to the container's non-root exec
+          # user, which doesn't own these files (confirmed via CI: chmod
+          # failed with "Operation not permitted") — explicitly run as root.
+          docker compose exec -u root -T laravel-api chmod -R 777 storage bootstrap/cache
 
       - name: Verify API is serving data after seeding
         run: |
