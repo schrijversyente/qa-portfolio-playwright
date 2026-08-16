@@ -1,20 +1,6 @@
 Feature: Authentication (remaining scenarios — not yet implemented)
 
   @high-risk
-  Scenario: Login fails with an incorrect password
-    Given I am on the login page
-    When I log in with a valid email and an incorrect password
-    Then I should see an error message
-    And I should not be logged in
-
-  @validation
-  Scenario: Login fails for a non-existent account
-    Given I am on the login page
-    When I log in with an email that is not registered
-    Then I should see an error message
-    And I should not be logged in
-
-  @high-risk
   Scenario: Successful registration of a new account
     Given I am on the registration page
     When I register with valid, unique account details
