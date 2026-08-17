@@ -19,20 +19,19 @@ export class LoginPage {
     await this.page.goto('/auth/login');
   }
 
-  async login(email: string, password: string) {
+  private async submitLoginForm(email: string, password: string) {
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
     await this.submitButton.click();
-    // waitForURL isn't covered by the global expect.timeout config (that
-    // only applies to expect() assertions), so this stays explicit — fail
-    // fast if login doesn't redirect rather than waiting the full default.
+  }
+
+  async login(email: string, password: string) {
+    await this.submitLoginForm(email, password);
     await this.page.waitForURL('**/account', { timeout: 5000 });
   }
 
   async loginWithInvalidCredentials(email: string, password: string) {
-    await this.emailInput.fill(email);
-    await this.passwordInput.fill(password);
-    await this.submitButton.click();
+    await this.submitLoginForm(email, password);
   }
 
   async expectLoginError() {
