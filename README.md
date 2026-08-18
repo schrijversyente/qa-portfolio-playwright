@@ -85,6 +85,8 @@ npm run report        # open the last HTML report
 ## What I'd do with more time
 
 - Resolve the postcode-lookup limitation with certainty (currently improved, not eliminated)
+- Remove the shared-test-account bottleneck (currently forces `workers: 1` on CI due to cross-worker login interference — see `playwright.config.ts`) by seeding a dedicated user per test run via the API
+- Add negative/security-oriented scenarios (e.g. XSS in form inputs, login rate-limiting) growing out of the same risk analysis in `docs/test-strategy.md`
+- Use an LLM to cross-check the risk analysis itself — feeding `docs/test-strategy.md` back in to surface edge cases the manual pass missed, rather than treating AI as a bolt-on
 - Implement the remaining Gherkin scenarios (checkout, payment, invoicing)
 - Add contract/API-level tests independent of the UI
-- Add caching to the CI pipeline to reduce the ~10 minute cold-start time
