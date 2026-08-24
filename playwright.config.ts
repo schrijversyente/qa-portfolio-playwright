@@ -26,12 +26,6 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  /* Scenarios share a fixed Toolshop test account (see features/steps/*.steps.ts).
-   * Confirmed via testing: running scenarios that log in with that account across
-   * multiple parallel workers causes cross-test interference (one worker's login
-   * redirect races another's). Single-worker on CI avoids that; local runs accept
-   * the same risk for speed since failures there are just re-run, not a gate. */
-  workers: process.env.CI ? 1 : undefined,
   reporter: [['html'], ['list']],
   /* Default timeout for expect(...) assertions across the suite. Page Objects
    * that need to deviate from this (e.g. a documented slow-render or a

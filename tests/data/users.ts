@@ -12,3 +12,8 @@ export const UNREGISTERED_EMAIL = {
   email: 'nonexistent@practicesoftwaretesting.com',
   password: 'welcome01',
 };
+
+export const ADMIN = {
+  email: 'admin@practicesoftwaretesting.com',
+  password: 'welcome01',
+};

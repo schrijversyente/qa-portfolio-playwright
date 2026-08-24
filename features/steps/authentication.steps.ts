@@ -1,6 +1,5 @@
 import { Given, When, Then } from '../fixtures';
 import {
-  CUSTOMER,
   CUSTOMER_WITH_INVALID_PASSWORD,
   UNREGISTERED_EMAIL,
 } from '../../tests/data/users';
@@ -9,8 +8,8 @@ Given('I am on the login page', async ({ loginPage }) => {
   await loginPage.goto();
 });
 
-When('I log in with a valid email and password', async ({ loginPage }) => {
-  await loginPage.login(CUSTOMER.email, CUSTOMER.password);
+When('I log in with a valid email and password', async ({ loginPage, testUser }) => {
+  await loginPage.login(testUser.email, testUser.password);
 });
 
 When('I log in with a valid email and an incorrect password', async ({ loginPage }) => {
@@ -31,8 +30,8 @@ Then('I should be logged in', async ({ accountPage }) => {
   await accountPage.expectLoggedIn();
 });
 
-Then('I should have access to my account', async ({ accountPage }) => {
-  await accountPage.expectLoggedIn('Jane Doe');
+Then('I should have access to my account', async ({ accountPage, testUser }) => {
+  await accountPage.expectLoggedIn(testUser.name);
 });
 
 Then('I should see an error message', async ({ loginPage }) => {

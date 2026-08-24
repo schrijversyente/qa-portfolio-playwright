@@ -1,6 +1,5 @@
 import { expect } from '@playwright/test';
 import { Given, When, Then } from '../fixtures';
-import { CUSTOMER } from '../../tests/data/users';
 
 // NOTE: no Before-hook navigation anymore — navigation now happens explicitly
 // AFTER sessionStorage seeding, since addInitScript only affects future
@@ -10,18 +9,21 @@ Given('I am on the checkout page', async () => {
   // handled as part of the combined flow below
 });
 
-Given('I have at least one product in my cart', async ({ seedCart, checkoutPage, loginPage }) => {
-  await seedCart();
-  await checkoutPage.goto();
-  await checkoutPage.proceedToNextStep(1); // cart -> login step
+Given(
+  'I have at least one product in my cart',
+  async ({ seedCart, checkoutPage, loginPage, testUser }) => {
+    await seedCart();
+    await checkoutPage.goto();
+    await checkoutPage.proceedToNextStep(1); // cart -> login step
 
-  await loginPage.login(CUSTOMER.email, CUSTOMER.password);
-  await checkoutPage.proceedToNextStep(2);
+    await loginPage.login(testUser.email, testUser.password);
+    await checkoutPage.proceedToNextStep(2);
 
-  // TODO: verify whether a proceed-2 step exists between login and the
-  // address form (proceed-3) — add checkoutPage.proceedToNextStep(2) here
-  // if the login doesn't automatically advance to the address step.
-});
+    // TODO: verify whether a proceed-2 step exists between login and the
+    // address form (proceed-3) — add checkoutPage.proceedToNextStep(2) here
+    // if the login doesn't automatically advance to the address step.
+  }
+);
 
 Given(
   'the postcode lookup upstream service is simulated to fail with a 502 error',
