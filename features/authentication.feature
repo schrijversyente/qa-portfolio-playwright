@@ -23,3 +23,10 @@ Feature: Authentication
     When I log in with an email that is not registered
     Then I should see an error message
     And I should not be logged in
+
+  @high-risk
+  Scenario: Successful registration of a new account
+    Given I am on the registration page
+    When I register with valid, unique account details
+    Then my account should be created
+    And I should be able to log in with those details

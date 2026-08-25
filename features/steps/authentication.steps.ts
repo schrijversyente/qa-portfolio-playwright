@@ -8,6 +8,10 @@ Given('I am on the login page', async ({ loginPage }) => {
   await loginPage.goto();
 });
 
+Given('I am on the registration page', async ({ registerPage }) => {
+  await registerPage.goto();
+});
+
 When('I log in with a valid email and password', async ({ loginPage, testUser }) => {
   await loginPage.login(testUser.email, testUser.password);
 });
@@ -26,6 +30,24 @@ When('I log in with an email that is not registered', async ({ loginPage }) => {
   );
 });
 
+When('I register with valid, unique account details', async ({ registerPage, registeredUser }) => {
+  registeredUser.email = `testuser-${Date.now()}@example.com`;
+  registeredUser.password = 'Xk9#mQ2vLp7z!';
+  await registerPage.register({
+    firstName: 'Test',
+    lastName: 'User',
+    birthDate: '2000-01-01',
+    country: 'Albania',
+    postalCode: '1000',
+    houseNumber: '1',
+    city: 'Testville',
+    state: 'TS',
+    phone: '1234567890',
+    email: registeredUser.email,
+    password: registeredUser.password,
+  });
+});
+
 Then('I should be logged in', async ({ accountPage }) => {
   await accountPage.expectLoggedIn();
 });
@@ -40,4 +62,13 @@ Then('I should see an error message', async ({ loginPage }) => {
 
 Then('I should not be logged in', async ({ loginPage }) => {
   await loginPage.expectNotLoggedIn();
+});
+
+Then('my account should be created', async ({ registerPage }) => {
+  await registerPage.expectRegistrationSuccess();
+});
+
+Then('I should be able to log in with those details', async ({ loginPage, accountPage, registeredUser }) => {
+  await loginPage.login(registeredUser.email, registeredUser.password);
+  await accountPage.expectLoggedIn();
 });

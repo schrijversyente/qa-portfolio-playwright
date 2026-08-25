@@ -1,12 +1,5 @@
 Feature: Authentication (remaining scenarios — not yet implemented)
 
-  @high-risk
-  Scenario: Successful registration of a new account
-    Given I am on the registration page
-    When I register with valid, unique account details
-    Then my account should be created
-    And I should be able to log in with those details
-
   @edge-case
   Scenario: Registration fails for an already registered email address
     Given I am on the registration page
