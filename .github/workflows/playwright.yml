@@ -15,11 +15,35 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
 
     steps:
       - name: Checkout test repository
         uses: actions/checkout@v4
+
+      # --- Test project setup (runs first: fails fast, and avoids competing
+      # --- for runner resources with the Toolshop containers) ---
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+        timeout-minutes: 10
+
+      # --- System under test ---
 
       - name: Checkout system under test (Toolshop)
         uses: actions/checkout@v4
@@ -30,93 +54,43 @@ jobs:
       - name: Fix bind-mount permissions for container write access
         working-directory: toolshop-app
         run: |
-          # Root cause (confirmed via actual error, not a guess this time):
-          # "Permission denied" writing to storage/logs/laravel.log and .env.
-          # The Toolshop API directory is bind-mounted into the laravel-api
-          # container; files checked out by GitHub Actions are owned by the
-          # runner user, while PHP-FPM inside the container runs as a
-          # different (more restricted) user, which can't write to them.
-          # This also explains why storage/logs/laravel.log never existed
-          # in earlier debug attempts — Laravel couldn't even write its own
-          # error log because of this same permission mismatch.
+          # The API directory is bind-mounted into the laravel-api container.
+          # PHP-FPM runs as a different user than the runner and needs write
+          # access to storage/ and .env.
           chmod -R 777 .
 
       - name: Start Toolshop application (Docker Compose)
         working-directory: toolshop-app
-        run: |
-          docker compose up -d
+        run: docker compose up -d
 
-      - name: Show container status (debug)
+      - name: Show container status
         if: always()
         working-directory: toolshop-app
         run: docker compose ps
 
-      - name: Wait for composer (dependency install) to finish
+      - name: Wait for composer install to finish
         working-directory: toolshop-app
         run: |
-          # The `composer` service is a one-shot container that runs
-          # `composer install` for the Laravel API. It's not a long-running
-          # service, so `docker compose up -d` returning doesn't mean it's
-          # done — confirmed via logs: it was still mid-install (downloading/
-          # extracting packages) well after our previous readiness checks
-          # had already passed, causing `migrate:fresh --seed` to run before
-          # Laravel's vendor/ directory was fully populated.
-          # `docker wait` blocks until the container exits and prints its
-          # exit code.
+          # The composer service is a one-shot container; wait for it to exit
+          # before running migrations.
           CID=$(docker compose ps -q composer)
           EXIT_CODE=$(docker wait "$CID")
           echo "composer container exited with code $EXIT_CODE"
           if [ "$EXIT_CODE" != "0" ]; then
-            echo "composer install failed — showing its logs:"
             docker compose logs composer
             exit 1
           fi
 
       - name: Generate Laravel application key
         working-directory: toolshop-app
-        run: |
-          # Laravel requires an APP_KEY (used for encrypting sessions/cookies)
-          # to boot at all. Locally this may already be set from a prior run
-          # (persisted in the committed .env or a Docker volume) — on a fresh
-          # CI checkout it may be missing, which would cause every single
-          # request to fail with a generic 500 and no application-level log
-          # entry (the failure happens too early in the boot process for
-          # Laravel's own exception handler to log it).
-          docker compose exec -T laravel-api php artisan key:generate --force
+        run: docker compose exec -T laravel-api php artisan key:generate --force
 
       - name: Wait for containers to accept connections
         run: |
           echo "Waiting for frontend..."
           timeout 480 bash -c 'until curl -sf http://localhost:4200 > /dev/null; do sleep 5; done'
-          echo "Waiting for API web server (any HTTP response)..."
+          echo "Waiting for API web server..."
           timeout 120 bash -c 'until curl -s -o /dev/null -w "%{http_code}" http://localhost:8091/products | grep -qE "^[0-9]{3}$"; do sleep 5; done'
-
-      - name: Show container logs (debug, only on failure)
-        if: failure()
-        working-directory: toolshop-app
-        run: docker compose logs
-
-      - name: Show Laravel application log (debug, only on failure)
-        if: failure()
-        working-directory: toolshop-app
-        run: |
-          # docker compose logs only shows the HTTP status code (500),
-          # not the actual PHP/Laravel error behind it. This dumps the
-          # real stack trace so we stop guessing at architecture issues
-          # and see the concrete cause.
-          docker compose exec -T laravel-api cat storage/logs/laravel.log || echo "No laravel.log found or command failed"
-
-      - name: Show raw HTTP response body (debug, only on failure)
-        if: failure()
-        run: |
-          # curl -sf discards the response body on a non-2xx status.
-          # Dropping -f shows us exactly what the server returns —
-          # laravel.log doesn't exist, so this may be the only place
-          # the actual error message is visible.
-          echo "--- Response from /products ---"
-          curl -v http://localhost:8091/products 2>&1 || true
-          echo "--- Response from / (root) ---"
-          curl -v http://localhost:8091/ 2>&1 || true
 
       - name: Seed test database
         working-directory: toolshop-app
@@ -125,61 +99,27 @@ jobs:
       - name: Fix storage/cache permissions after seeding
         working-directory: toolshop-app
         run: |
-          # Same root cause as the earlier bind-mount permission fix, but
-          # triggered later in the lifecycle: migrate:fresh (running as one
-          # container user) recreates storage/logs/laravel.log and cache
-          # files, which PHP-FPM (running as a different, more restricted
-          # user) can then no longer write to. Result: web requests that hit
-          # an error fail completely silently — no stack trace, no log entry,
-          # just a bare 500 — because Laravel can't even write the exception
-          # it's trying to log. Re-applying permissions after seeding closes
-          # that gap.
-          # docker compose exec defaults to the container's non-root exec
-          # user, which doesn't own these files (confirmed via CI: chmod
-          # failed with "Operation not permitted") — explicitly run as root.
+          # Seeding recreates log and cache files owned by another user;
+          # re-apply permissions as root so PHP-FPM can write to them.
           docker compose exec -u root -T laravel-api chmod -R 777 storage bootstrap/cache
 
-      - name: Verify API is serving data after seeding
-        run: |
-          timeout 120 bash -c 'until curl -sf http://localhost:8091/products > /dev/null; do sleep 3; done'
+      - name: Verify API is serving data
+        run: timeout 120 bash -c 'until curl -sf http://localhost:8091/products > /dev/null; do sleep 3; done'
 
-      - name: Show container logs (debug, only on failure, post-seed)
+      - name: Diagnostics on failure
         if: failure()
         working-directory: toolshop-app
-        run: docker compose logs
-
-      - name: Show Laravel application log (debug, only on failure, post-seed)
-        if: failure()
-        working-directory: toolshop-app
-        run: docker compose exec -T laravel-api cat storage/logs/laravel.log || echo "No laravel.log found or command failed"
-
-      - name: Show raw HTTP response body (debug, only on failure, post-seed)
-        if: failure()
         run: |
+          docker compose logs
+          echo "--- Laravel log ---"
+          docker compose exec -T laravel-api cat storage/logs/laravel.log || echo "No laravel.log found"
           echo "--- Response from /products ---"
           curl -v http://localhost:8091/products 2>&1 || true
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Lint
-        run: npm run lint
+      # --- Tests ---
 
       - name: Run Playwright tests
-        # @wip scenarios (postcode-lookup) are excluded — known limitation,
-        # see README "Known limitation" and docs/test-strategy.md.
-        # `npm test` runs `pretest` (bddgen) first automatically.
+        # @wip scenarios are excluded: known limitation, see README and docs/test-strategy.md.
         run: npm test -- --grep-invert @wip
 
       - name: Upload test report (workflow artifact)
@@ -190,10 +130,7 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
-      # Separate artifact upload specifically for the Pages deploy job below.
-      # Only relevant on a push to main — PR runs still get the regular
-      # artifact above for local inspection, but should never overwrite
-      # the published report.
+      # Only a push to main publishes the report to GitHub Pages.
       - name: Upload report for GitHub Pages
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
@@ -215,4 +152,4 @@ jobs:
     steps:
       - name: Deploy report to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v
